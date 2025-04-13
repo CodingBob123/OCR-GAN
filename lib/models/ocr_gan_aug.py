@@ -223,7 +223,24 @@ class Ocr_Gan_Aug(BaseModel_Aug):
             # Scale error vector between [0, 1]
             self.an_scores = (self.an_scores - torch.min(self.an_scores)) / \
                              (torch.max(self.an_scores) - torch.min(self.an_scores))
-            auc = roc(self.gt_labels, self.an_scores)
+                        
+            #  为了调试程序，后续增加的部分
+            print("gt_labels shape:", self.gt_labels.shape)
+            print("gt_labels samples:", self.gt_labels[:5])  # 示例前5个标签
+            print("an_scores shape:", self.an_scores.shape)
+            print("an_scores samples:", self.an_scores[:5])  # 示例前5个分数
+
+            # 将 CUDA 张量转移到 CPU 并转换为 NumPy 数组
+            gt_labels_np = self.gt_labels.cpu().numpy().astype(int)
+            an_scores_np = self.an_scores.cpu().numpy().astype(float)
+
+            # 确保标签为二分类格式(0和1)
+            gt_labels_binary = (gt_labels_np > 0).astype(int)
+
+            # auc = roc(self.gt_labels, self.an_scores)
+            # 使用处理后的数据计算 AUC
+            auc = roc(torch.tensor(gt_labels_binary, device=self.device), self.an_scores)
+            # auc = roc(self.gt_labels, self.an_scores)
             performance = OrderedDict([('Avg Run Time (ms/batch)', self.times), ('AUC', auc)])
             if self.opt.load_weights:
                 self.visualizer.print_current_performance(performance, auc)
